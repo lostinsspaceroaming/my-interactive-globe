@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Globe and Map</title>
+
+  <!-- Cesium -->
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.97/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.97/Build/Cesium/Cesium.js"></script>
+
+  <!-- Google Maps -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBcs4l-0zt7bAyLieNFPZ9IZoo_Mfh2rwM"></script>
+
+  <style>
+    html, body, #cesiumContainer, #mapContainer {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1;
+    }
+    .control-button {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      padding: 5px;
+      margin: 2px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div id="mapContainer" style="display: none;"></div>
+  <div class="controls">
+    <button class="control-button" onclick="zoomIn()">Zoom In</button>
+    <button class="control-button" onclick="zoomOut()">Zoom Out</button>
+    <button class="control-button" onclick="switchTo2D()">Switch to 2D</button>
+    <button class="control-button" onclick="switchTo3D()">Switch to 3D</button>
+  </div>
+
+  <script>
+    // Cesium Setup
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJmNjQyZTNkOC0yY2M5LTQ3NDMtYWIzMS0zNzNjY2EwYmE5OWUiLCJpZCI6MjQyMDE2LCJpYXQiOjE3MjY1MTg1NjJ9.QjihmJwquPStr9cQ8R96IdSc7_e1Rx81GyAfhidnBRU';
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrainProvider: Cesium.createWorldTerrain()
+    });
+
+    // Google Maps Setup
+    let map;
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('mapContainer'), {
+        center: { lat: 0, lng: 0 }, // Default center
+        zoom: 15,
+        mapTypeId: 'satellite'
+      });
+    }
+
+    // Function to get user location
+    function getUserLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const { latitude, longitude } = position.coords;
+          // Fly to the user's location
+          viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(longitude, latitude, 15000),
+            duration: 3,
+            complete: () => {
+              // Once zoomed in, switch to 2D map view
+              switchTo2DMap(latitude, longitude);
+            }
+          });
+        }, error => {
+          console.error('Error getting location', error);
+        });
+      } else {
+        console.error('Geolocation is not supported by this browser.');
+      }
+    }
+
+    // Switch to 2D Google Map
+    function switchTo2DMap(lat, lng) {
+      document.getElementById('cesiumContainer').style.display = 'none';
+      document.getElementById('mapContainer').style.display = 'block';
+      initMap();
+      map.setCenter({ lat, lng });
+      new google.maps.Marker({
+        position: { lat, lng },
+        map: map,
+        title: 'You are here'
+      });
+    }
+
+    // Zoom In
+    function zoomIn() {
+      viewer.camera.zoomIn(5000);
+    }
+
+    // Zoom Out
+    function zoomOut() {
+      viewer.camera.zoomOut(5000);
+    }
+
+    // Switch to 2D view
+    function switchTo2D() {
+      viewer.scene.mode = Cesium.SceneMode.COLUMBUS_VIEW;
+    }
+
+    // Switch to 3D view
+    function switchTo3D() {
+      viewer.scene.mode = Cesium.SceneMode.SCENE3D;
+    }
+
+    // Start by getting the user location
+    getUserLocation();
+  </script>
+</body>
+</html>
